@@ -31,7 +31,7 @@ navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
   console.log('No live audio input: ' + e);
 });
 ```
-aaa
+
 #### Audio nodes for routing
 
 You can route audio stream around, with input nodes (microphone, synths, etc), filters (volume / gain, equaliser, low pass, etc) and outputs (speakers, binary streams, etc).
