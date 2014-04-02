@@ -378,49 +378,100 @@ function audioLayerControl(elementContext)
     this.get3dPosition = function get3dPosition(){
         this.distance3d = [0,1];
     }
+
     this.save = function save(saveLink)
     {
-        // var url = this.toWave().toBlobUrlAsync("application/octet-stream");
-        // saveLink.href = url;
-        // saveLink.className = "btn btn-large btn-success";
-        /*this.toWave().toBlobUrlAsync(function(url, host)
-                                {
-                                    saveLink.href = url;
-                                }, saveLink);  */
-        var worker = new Worker('js/lib/recorderWorker.js');
- 
-// initialize the new worker
-            worker.postMessage({
-              command: 'init',
-              config: {sampleRate: 44100}
-                });
-             
-            // callback for `exportWAV`
-            worker.onmessage = function( e ) {
-              var blob = e.data;
-              // this is would be your WAV blob
-                handleWAV(blob, {type: 'audio/wav'}));
+        this.myrecord([this.audioLayerControl.listOfSequenceEditors[0].audioSequenceReference.data,this.audioLayerControl.listOfSequenceEditors[1].audioSequenceReference.data])
+        var blobmy = this.exportWAV('audio/wav');
+           handleWAV(blobmy);
 
-                $('.recorder.container').removeClass('hide');
-                $('.editor.container').addClass('invisible');
-            };
-             
-            // send the channel data from our buffer to the worker
-            worker.postMessage({
-              command: 'record',
-              buffer: [
-                this.audioLayerControl.listOfSequenceEditors[0].audioSequenceReference.data, 
-                this.audioLayerControl.listOfSequenceEditors[1].audioSequenceReference.data
-              ]
-            });
-             
-            // ask the worker for a WAV
-            worker.postMessage({
-              command: 'exportWAV',
-              type: 'audio/wav'
-            });
+        $('.recorder.container').removeClass('hide');
+        $('.editor.container').addClass('invisible');
+
     };
+    this.myrecord = function myrecord(inputBuffer){
+      var bufferL = inputBuffer[0];
+      var bufferR = inputBuffer[1];
+      var interleaved = this.interleave(bufferL, bufferR);
+      this.recBuffers =[];
+      this.recLength = 0;
+      this.recBuffers.push(interleaved);
+      this.recLength += interleaved.length;
+    };
+      this.interleave =   function interleave(inputL, inputR){
+      var length = inputL.length + inputR.length;
+      var result = new Float32Array(length);
 
+      var index = 0,
+        inputIndex = 0;
+
+      while (index < length){
+        result[index++] = inputL[inputIndex];
+        result[index++] = inputR[inputIndex];
+        inputIndex++;
+      }
+      return result;
+    };
+    this.exportWAV = function exportWAV(type){
+      var buffer = this.mergeBuffers(this.recBuffers, this.recLength);
+      var dataview = this.encodeWAV(buffer);
+      var audioBlob = new Blob([dataview], { type: type });
+        return audioBlob;
+    };
+       this.encodeWAV=  function encodeWAV(samples){
+      var buffer = new ArrayBuffer(44 + samples.length * 2);
+      var view = new DataView(buffer);
+
+      /* RIFF identifier */
+      this.writeString(view, 0, 'RIFF');
+      /* file length */
+      view.setUint32(4, 32 + samples.length * 2, true);
+      /* RIFF type */
+      this.writeString(view, 8, 'WAVE');
+      /* format chunk identifier */
+      this.writeString(view, 12, 'fmt ');
+      /* format chunk length */
+      view.setUint32(16, 16, true);
+      /* sample format (raw) */
+      view.setUint16(20, 1, true);
+      /* channel count */
+      view.setUint16(22, 2, true);
+      /* sample rate */
+      view.setUint32(24, this.audioLayerControl.listOfSequenceEditors[0].audioSequenceReference.sampleRate, true);
+      /* byte rate (sample rate * block align) */
+      view.setUint32(28, this.audioLayerControl.listOfSequenceEditors[0].audioSequenceReference.sampleRate * 4, true);
+      /* block align (channel count * bytes per sample) */
+      view.setUint16(32, 4, true);
+      /* bits per sample */
+      view.setUint16(34, 16, true);
+      /* data chunk identifier */
+      this.writeString(view, 36, 'data');
+      /* data chunk length */
+      view.setUint32(40, samples.length * 2, true);
+            var floatTo16BitPCM =   function floatTo16BitPCM(output, offset, input){
+          for (var i = 0; i < input.length; i++, offset+=2){
+            var s = Math.max(-1, Math.min(1, input[i]));
+            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          }
+        };
+      floatTo16BitPCM(view, 44, samples);
+
+      return view;
+    };
+    this.writeString =    function writeString(view, offset, string){
+      for (var i = 0; i < string.length; i++){
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+        this.mergeBuffers = function mergeBuffers(recBuffers, recLength){
+      var result = new Float32Array(recLength);
+      var offset = 0;
+      for (var i = 0; i < recBuffers.length; i++){
+        result.set(recBuffers[i], offset);
+        offset += recBuffers[i].length;
+      }
+      return result;
+    };
     this.saveBack = function saveBack()
     {
         // this.toWave().toBlobUrlAsync('audio/wav', function(url, host, e) {
@@ -489,6 +540,13 @@ function audioLayerControl(elementContext)
     this.elementContext.stop = this.stop;
     this.elementContext.toggleLoop = this.toggleLoop;
     this.elementContext.save = this.save;
+     this.elementContext.myrecord = this.myrecord;
+      this.elementContext.interleave = this.interleave;
+       this.elementContext.exportWAV = this.exportWAV;
+        this.elementContext.mergeBuffers = this.mergeBuffers;
+        this.elementContext.encodeWAV = this.encodeWAV;
+         this.elementContext.writeString = this.writeString;
+        
     this.elementContext.saveBack = this.saveBack;
     this.elementContext.testFilter = this.testFilter;
     this.elementContext.createTestSignal = this.createTestSignal;
