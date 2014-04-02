@@ -23,7 +23,7 @@ function audioLayerControl(elementContext)
     this.audioSequenceLength = 0;
     
     this.playLoop = false;
-
+    this.distance3d = [0,0];
     // use the audio context to play audio
     this.audioPlayback = new AudioPlayback();
     
@@ -248,7 +248,18 @@ function audioLayerControl(elementContext)
             this.audioLayerControl.listOfSequenceEditors[i].filterGain(decibel);
         } 
     };
-    
+      this.filterGain_left = function filterGain_left(decibel)
+    {
+        
+            this.audioLayerControl.listOfSequenceEditors[0].filterGain(decibel);
+        
+    };
+       this.filterGain_right = function filterGain_right(decibel)
+    {
+        
+            this.audioLayerControl.listOfSequenceEditors[1].filterGain(decibel);
+        
+    };
     this.filterSilence = function filterSilence()
     {
         for(var i = 0; i < this.audioLayerControl.listOfSequenceEditors.length; ++i)
@@ -264,7 +275,9 @@ function audioLayerControl(elementContext)
             this.audioLayerControl.listOfSequenceEditors[i].copy(false);
         } 
     };
-    
+    this.change3d = function change3d(){
+
+    };
     this.paste = function paste()
     {
         for(var i = 0; i < this.audioLayerControl.listOfSequenceEditors.length; ++i)
@@ -362,16 +375,50 @@ function audioLayerControl(elementContext)
     {
         this.playLoop = !this.playLoop;
     };
-
+    this.get3dPosition = function get3dPosition(){
+        this.distance3d = [0,1];
+    }
     this.save = function save(saveLink)
     {
-        var url = this.toWave().toBlobUrlAsync("application/octet-stream");
-        saveLink.href = url;
-        saveLink.className = "btn btn-large btn-success";
+        // var url = this.toWave().toBlobUrlAsync("application/octet-stream");
+        // saveLink.href = url;
+        // saveLink.className = "btn btn-large btn-success";
         /*this.toWave().toBlobUrlAsync(function(url, host)
                                 {
                                     saveLink.href = url;
                                 }, saveLink);  */
+        var worker = new Worker('js/lib/recorderWorker.js');
+ 
+// initialize the new worker
+            worker.postMessage({
+              command: 'init',
+              config: {sampleRate: 44100}
+                });
+             
+            // callback for `exportWAV`
+            worker.onmessage = function( e ) {
+              var blob = e.data;
+              // this is would be your WAV blob
+                handleWAV(blob, {type: 'audio/wav'}));
+
+                $('.recorder.container').removeClass('hide');
+                $('.editor.container').addClass('invisible');
+            };
+             
+            // send the channel data from our buffer to the worker
+            worker.postMessage({
+              command: 'record',
+              buffer: [
+                this.audioLayerControl.listOfSequenceEditors[0].audioSequenceReference.data, 
+                this.audioLayerControl.listOfSequenceEditors[1].audioSequenceReference.data
+              ]
+            });
+             
+            // ask the worker for a WAV
+            worker.postMessage({
+              command: 'exportWAV',
+              type: 'audio/wav'
+            });
     };
 
     this.saveBack = function saveBack()
@@ -379,7 +426,9 @@ function audioLayerControl(elementContext)
         // this.toWave().toBlobUrlAsync('audio/wav', function(url, host, e) {
         //     console.warn(url, host, e);
         // });
-        handleWAV(new Blob([this.toWave().encodeWaveFile()], {type: 'audio/wav'}));
+        var ha  = this.toWave();
+        var la = ha.encodeWaveFile();
+        handleWAV(new Blob([la], {type: 'audio/wav'}));
 
         $('.recorder.container').removeClass('hide');
         $('.editor.container').addClass('invisible');
@@ -429,6 +478,9 @@ function audioLayerControl(elementContext)
     this.elementContext.filterFadeIn = this.filterFadeIn;
     this.elementContext.filterFadeOut = this.filterFadeOut;
     this.elementContext.filterGain = this.filterGain;
+    this.elementContext.filterGain_left = this.filterGain_left;
+      this.elementContext.filterGain_right = this.filterGain_right;
+    
     this.elementContext.filterSilence = this.filterSilence;
     
     this.elementContext.toWave = this.toWave;

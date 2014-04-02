@@ -99,6 +99,7 @@
               <a class="btn btn-primary" onclick="$('#audioLayerControl')[0].paste();"><i class="icon-chevron-down icon-white"></i> Paste</a>
               <a class="btn btn-primary" onclick="$('#audioLayerControl')[0].cut();"><i class="icon-chevron-up icon-white"></i> Cut</a>
               <a class="btn btn-primary" onclick="$('#audioLayerControl')[0].del();"><i class="icon-remove icon-white"></i> Delete</a>
+               <a class="btn btn-primary" onclick="$('#audioLayerControl')[0].change3d();"><span class="glyphicon glyphicon-align-justify "></span> change</a>
             </div>
             <div class="btn-group">
               <a class="btn btn-success" onclick="$('#audioLayerControl')[0].selectAll();"><i class="icon-resize-horizontal icon-white"></i> Select All</a>
@@ -142,7 +143,7 @@
               </div>
               <div class="btn-group">
                 <!-- <a class="btn btn-large btn-primary" onclick="$('#audioLayerControl')[0].save($('#savelink')[0]);"><i class="icon-fire"></i> Render</a> -->
-                <button class="btn btn-large btn-success" id="savelink" onclick="$('#audioLayerControl')[0].saveBack();"><i class="icon-download"></i> Save</button>
+                <button class="btn btn-large btn-success" id="savelink" onclick="$('#audioLayerControl')[0].save();"><i class="icon-download"></i> Save</button>
               </div>
             </div>
           </center>
@@ -159,6 +160,112 @@
       <div class="row">
         <div class="span1"><br></div>
         <div class="span2">
+          <h6>Gain left</h6>
+          <div class="well" style="height: 130px; position:relative">
+            <p>Change the volume of the selected audio sequence with the given gain multiplicator.</p>
+            
+              <div class="pull-right" style=" position:absolute; bottom: 5px; width: 100%;" >
+                <div class="btn-group" >
+                  
+                    <button class="btn btn-success" onclick="decrease_db_left()"><i class="icon-minus"></i></button>
+                    <button id="gain-db_left" class="btn disabled" onclick="gain_btn_clicked_left()">0 db</button>
+                    <button class="btn btn-success" onclick="increase_db_left()"><i class="icon-plus"></i></button> 
+                </div>
+              </div>
+            <script type="text/javascript">
+                var db_gain_left = 0;
+
+                function decrease_db_left()
+                {
+                  --db_gain_left;
+                  update_db_gain_btn_left();
+                }
+
+                function increase_db_left()
+                {
+                  ++db_gain_left;
+                  update_db_gain_btn_left();
+                }
+
+                function update_db_gain_btn_left()
+                {
+                  var gain_btn_left = $('#gain-db_left')[0];
+
+                  gain_btn_left.innerHTML = db_gain_left + ' db'; 
+
+                  if (db_gain_left === 0)
+                  {
+                    gain_btn_left.className = 'btn disabled';
+                  }
+                  else
+                  {
+                    gain_btn_left.className = 'btn btn-primary';
+                  }
+                }
+
+                function gain_btn_clicked_left()
+                {
+                  $('#audioLayerControl')[0].filterGain_left(db_gain_left);
+                  db_gain_left = 0;
+                  update_db_gain_btn_left();
+                }
+                </script>
+          </div>
+        </div>
+                <div class="span2">
+          <h6>Gain right</h6>
+          <div class="well" style="height: 130px; position:relative">
+            <p>Change the volume of the selected audio sequence with the given gain multiplicator.</p>
+            
+              <div class="pull-right" style=" position:absolute; bottom: 5px; width: 100%;" >
+                <div class="btn-group" >
+                  
+                    <button class="btn btn-success" onclick="decrease_db_right()"><i class="icon-minus"></i></button>
+                    <button id="gain-db_right" class="btn disabled" onclick="gain_btn_clicked_right()">0 db</button>
+                    <button class="btn btn-success" onclick="increase_db_right()"><i class="icon-plus"></i></button> 
+                </div>
+              </div>
+            <script type="text/javascript">
+                var db_gain_right = 0;
+
+                function decrease_db_right()
+                {
+                  --db_gain_right;
+                  update_db_gain_btn_right();
+                }
+
+                function increase_db_right()
+                {
+                  ++db_gain_right;
+                  update_db_gain_btn_right();
+                }
+
+                function update_db_gain_btn_right()
+                {
+                  var gain_btn_right = $('#gain-db_right')[0];
+
+                  gain_btn_right.innerHTML = db_gain_right + ' db'; 
+
+                  if (db_gain_right === 0)
+                  {
+                    gain_btn_right.className = 'btn disabled';
+                  }
+                  else
+                  {
+                    gain_btn_right.className = 'btn btn-primary';
+                  }
+                }
+
+                function gain_btn_clicked_right()
+                {
+                  $('#audioLayerControl')[0].filterGain_right(db_gain_right);
+                  db_gain_right = 0;
+                  update_db_gain_btn_right();
+                }
+                </script>
+          </div>
+        </div>
+                <div class="span2">
           <h6>Gain</h6>
           <div class="well" style="height: 130px; position:relative">
             <p>Change the volume of the selected audio sequence with the given gain multiplicator.</p>
